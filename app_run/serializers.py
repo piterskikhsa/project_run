@@ -6,4 +6,9 @@ from app_run.models import Run
 class RunSerializer(serializers.ModelSerializer):
     class Meta:
         model = Run
-        fields = ['athlete', 'created_at', 'comment']
+        fields = [
+            'athlete',
+            'created_at',
+            'comment',
+            'id',
+        ]
