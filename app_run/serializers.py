@@ -56,11 +56,11 @@ class RunSerializer(serializers.ModelSerializer):
 
 
 class AthleteInfoSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    user_id = serializers.PrimaryKeyRelatedField(source='user', read_only=True)
     class Meta:
         model = AthleteInfo
         fields = [
-            'user',
+            'user_id',
             'goals',
             'weight',
         ]
