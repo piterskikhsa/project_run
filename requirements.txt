@@ -1,4 +1,6 @@
 Django==5.2
-psycopg2-binary==2.9.10
+djangorestframework==3.16.0
 django-storages==1.14.6
+
+psycopg2-binary==2.9.10
 boto3==1.37.37
