@@ -29,7 +29,7 @@ class Run(models.Model):
 class AthleteInfo(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='athlete_info', primary_key=True)
     goals = models.TextField(default='',)
-    weight = models.FloatField(default=0.0, validators=[MinValueValidator(0.0), MaxValueValidator(900.0)])
+    weight = models.IntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(900)])
 
     class Meta:
         verbose_name = 'Athlete Info'
