@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework import viewsets
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action
 from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 
@@ -24,6 +24,24 @@ def company_details(request):
 class RunViewSet(viewsets.ModelViewSet):
     queryset = Run.objects.all().select_related('athlete')
     serializer_class = RunSerializer
+
+    @action(detail=True, methods=['post'])
+    def start(self, request, pk=None):
+        run = self.get_object()
+        if run.status != Run.INIT:
+            return Response({'message': 'Run already started'}, status=400)
+        run.status = Run.IN_PROGRESS
+        run.save()
+        return Response(RunSerializer(run).data, status=200)
+
+    @action(detail=True, methods=['post'])
+    def stop(self, request, pk=None):
+        run = self.get_object()
+        if run.status != Run.IN_PROGRESS:
+            return Response({'message': 'Run already finished or not started'}, status=400)
+        run.status = Run.FINISHED
+        run.save()
+        return Response(RunSerializer(run).data, status=200)
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.exclude(is_superuser=True)
