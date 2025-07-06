@@ -6,14 +6,14 @@ from app_run.models import Run
 
 User = get_user_model()
 
-class RunSerializer(serializers.ModelSerializer):
+class UserShortSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Run
+        model = User
         fields = [
-            'athlete',
-            'created_at',
-            'comment',
             'id',
+            'username',
+            'last_name',
+            'first_name',
         ]
 
 
@@ -33,3 +33,16 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_type(self, obj):
         return 'coach' if obj.is_staff else 'athlete'
+
+
+class RunSerializer(serializers.ModelSerializer):
+    athlete_data = UserShortSerializer(source='athlete', read_only=True)
+    class Meta:
+        model = Run
+        fields = [
+            'athlete',
+            'created_at',
+            'comment',
+            'id',
+            'athlete_data',
+        ]
