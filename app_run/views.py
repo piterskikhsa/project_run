@@ -5,11 +5,13 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
 from rest_framework.decorators import api_view, action
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from app_run.models import Run
-from app_run.serializers import RunSerializer, UserSerializer
+from app_run.models import Run, AthleteInfo
+from app_run.serializers import RunSerializer, UserSerializer, AthleteInfoSerializer
 
 User = get_user_model()
 
@@ -72,3 +74,19 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
         elif user_type == 'athlete':
             qs = qs.filter(is_staff=False)
         return qs
+
+
+class AthleteInfoApiView(APIView):
+    def get(self, request, user_id=None):
+        user = get_object_or_404(User, pk=user_id)
+        athlete_info, _ = AthleteInfo.objects.get_or_create(user=user)
+        return Response(AthleteInfoSerializer(athlete_info).data)
+
+    def put(self, request, user_id=None):
+        data = request.data
+        user = get_object_or_404(User, pk=user_id)
+        athlete_info, _ = AthleteInfo.objects.get_or_create(user=user)
+        serializer = AthleteInfoSerializer(instance=athlete_info, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)

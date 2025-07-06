@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 
@@ -23,3 +24,16 @@ class Run(models.Model):
 
     def __str__(self):
         return f'{self.athlete} - {self.created_at}'
+
+
+class AthleteInfo(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='athlete_info', primary_key=True)
+    goals = models.TextField(default='',)
+    weight = models.FloatField(default=0.0, validators=[MinValueValidator(0.0), MaxValueValidator(900.0)])
+
+    class Meta:
+        verbose_name = 'Athlete Info'
+        verbose_name_plural = 'Athlete Info'
+
+    def __str__(self):
+        return f'{self.user}'
