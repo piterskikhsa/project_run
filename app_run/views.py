@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
 from rest_framework.decorators import api_view, action
@@ -56,7 +57,7 @@ class RunViewSet(viewsets.ModelViewSet):
         return Response(RunSerializer(run).data, status=200)
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = User.objects.exclude(is_superuser=True)
+    queryset = User.objects.exclude(is_superuser=True).annotate(runs_finished=Count('runs', filter=Q(runs__status=Run.FINISHED)))
     serializer_class = UserSerializer
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ['first_name', 'last_name']

@@ -11,7 +11,7 @@ class Run(models.Model):
         (IN_PROGRESS, 'Started'),
         (FINISHED, 'Finished'),
     ]
-    athlete = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    athlete = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='runs')
     created_at = models.DateTimeField(auto_now_add=True)
     comment = models.TextField(null=True)
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default=INIT)
