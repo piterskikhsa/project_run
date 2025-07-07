@@ -10,8 +10,13 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from app_run.models import Run, AthleteInfo
-from app_run.serializers import RunSerializer, UserSerializer, AthleteInfoSerializer
+from app_run.models import Run, AthleteInfo, Challenge
+from app_run.serializers import (
+    RunSerializer,
+    UserSerializer,
+    AthleteInfoSerializer,
+    ChallengeSerializer,
+)
 
 User = get_user_model()
 
@@ -56,6 +61,9 @@ class RunViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Run already finished or not started'}, status=400)
         run.status = Run.FINISHED
         run.save()
+        runs_finished = Run.objects.filter(athlete=run.athlete, status=Run.FINISHED)
+        if runs_finished.count() == 10:
+            Challenge.objects.create(athlete=run.athlete, full_name='Сделай 10 Забегов!')
         return Response(RunSerializer(run).data, status=200)
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -90,3 +98,11 @@ class AthleteInfoApiView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ChallengeViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Challenge.objects.all()
+    serializer_class = ChallengeSerializer
+    filter_backends = [DjangoFilterBackend,]
+    filterset_fields = ['athlete',]
+    pagination_class = PagePagination

@@ -37,3 +37,15 @@ class AthleteInfo(models.Model):
 
     def __str__(self):
         return f'{self.user}'
+
+
+class Challenge(models.Model):
+    full_name = models.CharField(max_length=100)
+    athlete = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='challenges')
+    created_at = models.DateTimeField(auto_now_add=True)
+    comment = models.TextField(null=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Challenge'
+        verbose_name_plural = 'Challenges'

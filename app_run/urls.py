@@ -6,11 +6,13 @@ from app_run.views import (
     RunViewSet,
     UserViewSet,
     AthleteInfoApiView,
+    ChallengeViewSet,
 )
 
 router = DefaultRouter()
 router.register('runs', RunViewSet, basename='runs')
 router.register('users', UserViewSet, basename='users')
+router.register('challenges', ChallengeViewSet, basename='challenges')
 
 urlpatterns = [
     path('company_details/', company_details, name='company_details'),
