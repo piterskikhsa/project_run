@@ -23,7 +23,7 @@ class Run(models.Model):
         verbose_name_plural = 'Runs'
 
     def __str__(self):
-        return f'{self.athlete} - {self.created_at}'
+        return f'{self.athlete} - {self.status}'
 
 
 class AthleteInfo(models.Model):
@@ -49,3 +49,21 @@ class Challenge(models.Model):
         ordering = ['created_at']
         verbose_name = 'Challenge'
         verbose_name_plural = 'Challenges'
+
+    def __str__(self):
+        return f'{self.athlete} - {self.created_at}'
+
+
+class Position(models.Model):
+    run = models.ForeignKey(Run, on_delete=models.CASCADE, related_name='positions')
+    latitude = models.DecimalField(validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)], max_digits=6, decimal_places=4)
+    longitude = models.DecimalField(validators=[MinValueValidator(-180.0), MaxValueValidator(180.0)], max_digits=7, decimal_places=4)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Position'
+        verbose_name_plural = 'Positions'
+
+    def __str__(self):
+        return f'{self.run} - {self.latitude} - {self.longitude}'

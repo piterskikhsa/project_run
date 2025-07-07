@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from app_run.models import Run, AthleteInfo, Challenge
+from app_run.models import Run, AthleteInfo, Challenge, Position
 
 User = get_user_model()
 
@@ -74,3 +74,20 @@ class ChallengeSerializer(serializers.ModelSerializer):
             'full_name',
             'athlete',
         ]
+
+
+class PositionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Position
+        fields = [
+            'id',
+            'run',
+            'latitude',
+            'longitude',
+            'created_at',
+        ]
+
+    def validate_run(self, value):
+        if value.status != Run.IN_PROGRESS:
+            raise serializers.ValidationError('Run is not in progress')
+        return value

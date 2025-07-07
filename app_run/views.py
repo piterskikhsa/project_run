@@ -10,12 +10,13 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from app_run.models import Run, AthleteInfo, Challenge
+from app_run.models import Run, AthleteInfo, Challenge, Position
 from app_run.serializers import (
     RunSerializer,
     UserSerializer,
     AthleteInfoSerializer,
     ChallengeSerializer,
+    PositionSerializer,
 )
 
 User = get_user_model()
@@ -105,4 +106,12 @@ class ChallengeViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ChallengeSerializer
     filter_backends = [DjangoFilterBackend,]
     filterset_fields = ['athlete',]
+    pagination_class = PagePagination
+
+
+class PositionViewSet(viewsets.ModelViewSet):
+    queryset = Position.objects.all()
+    serializer_class = PositionSerializer
+    filter_backends = [DjangoFilterBackend,]
+    filterset_fields = ['run',]
     pagination_class = PagePagination
