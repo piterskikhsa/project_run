@@ -77,6 +77,7 @@ class CollectibleItem(models.Model):
     latitude = models.DecimalField(validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)], max_digits=6, decimal_places=4)
     longitude = models.DecimalField(validators=[MinValueValidator(-180.0), MaxValueValidator(180.0)], max_digits=7, decimal_places=4)
     picture = models.URLField(max_length=250)
+    users = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='collectible_items')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -1,3 +1,4 @@
+
 import openpyxl
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -20,10 +21,10 @@ from app_run.serializers import (
     ChallengeSerializer,
     PositionSerializer,
     CollectibleItemSerializer,
+    UserDetailSerializer,
 )
 
 User = get_user_model()
-
 
 def calculate_distance(positions):
     way = [(position.latitude, position.longitude) for position in positions]
@@ -92,6 +93,11 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['first_name', 'last_name']
     ordering_fields = ['date_joined']
     pagination_class = PagePagination
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return UserDetailSerializer
+        return super().get_serializer_class()
 
     def get_queryset(self):
         qs = self.queryset

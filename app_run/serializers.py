@@ -41,6 +41,7 @@ class UserSerializer(serializers.ModelSerializer):
             return runs_finished
         return Run.objects.filter(athlete=obj, status=Run.FINISHED).count()
 
+
 class RunSerializer(serializers.ModelSerializer):
     athlete_data = UserShortSerializer(source='athlete', read_only=True)
     class Meta:
@@ -106,3 +107,10 @@ class CollectibleItemSerializer(serializers.ModelSerializer):
             'longitude',
             'picture',
         ]
+
+
+class UserDetailSerializer(UserSerializer):
+    items = CollectibleItemSerializer(source='collectible_items', many=True, read_only=True)
+
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + ['items']
