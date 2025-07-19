@@ -147,24 +147,18 @@ def process_file(file):
     collectible_items = []
     row_errors = []
     column_names = ['name', 'uid', 'value', 'latitude', 'longitude', 'picture']
-    row_num = 1
     for row in sheet.iter_rows(min_row=2, values_only=True):
-        row_num += 1
-
         if all(value is None for value in row):
             continue
+
         item_row = {name: value for name, value in zip(column_names, row)}
-
         item = CollectibleItem(**item_row)
-
         serializer = CollectibleItemSerializer(data=item_row)
         if serializer.is_valid():
             collectible_items.append(item)
         else:
-            errors_fields = []
-            for field, error in serializer.errors.items():
-                errors_fields.append(f'row_{row_num}[{column_names.index(field) + 1}]')
-            row_errors.append(errors_fields)
+            row_errors.append(row)
+
     CollectibleItem.objects.bulk_create(
         collectible_items,
         batch_size=1000,
