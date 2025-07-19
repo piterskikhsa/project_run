@@ -9,6 +9,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from geopy.distance import geodesic
 
 from app_run.models import Run, AthleteInfo, Challenge, Position
 from app_run.serializers import (
@@ -37,6 +38,10 @@ def company_details(request):
     return Response(company_info)
 
 
+def calculate_distance(positions):
+    way = [(position.latitude, position.longitude) for position in positions]
+    return geodesic(way).kilometers
+
 class RunViewSet(viewsets.ModelViewSet):
     queryset = Run.objects.all().select_related('athlete')
     serializer_class = RunSerializer
@@ -61,6 +66,8 @@ class RunViewSet(viewsets.ModelViewSet):
         if run.status != Run.IN_PROGRESS:
             return Response({'message': 'Run already finished or not started'}, status=400)
         run.status = Run.FINISHED
+        distance = calculate_distance(run.positions.all())
+        run.distance = distance 
         run.save()
         runs_finished = Run.objects.filter(athlete=run.athlete, status=Run.FINISHED)
         if runs_finished.count() == 10:

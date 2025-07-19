@@ -52,6 +52,7 @@ class RunSerializer(serializers.ModelSerializer):
             'comment',
             'status',
             'athlete_data',
+            'distance',
         ]
 
 
