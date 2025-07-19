@@ -16,7 +16,8 @@ class Run(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     comment = models.TextField(null=True)
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default=INIT)
-    distance = models.FloatField(validators=[MinValueValidator(0.0)],default=0.0)
+    distance = models.FloatField(validators=[MinValueValidator(0.0)], default=0.0)
+    run_time_seconds = models.IntegerField(validators=[MinValueValidator(0)], default=0)
 
     class Meta:
         ordering = ['created_at']
@@ -58,7 +59,12 @@ class Challenge(models.Model):
 class Position(models.Model):
     run = models.ForeignKey(Run, on_delete=models.CASCADE, related_name='positions')
     latitude = models.DecimalField(validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)], max_digits=6, decimal_places=4)
-    longitude = models.DecimalField(validators=[MinValueValidator(-180.0), MaxValueValidator(180.0)], max_digits=7, decimal_places=4)
+    longitude = models.DecimalField(
+        validators=[MinValueValidator(-180.0), MaxValueValidator(180.0)],
+        max_digits=7,
+        decimal_places=4,
+    )
+    date_time = models.DateTimeField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

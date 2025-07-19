@@ -2,7 +2,7 @@
 import openpyxl
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, Max, Min
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, action
@@ -46,6 +46,14 @@ def company_details(request):
     return Response(company_info)
 
 
+def calculate_time(run_id):
+    times = Position.objects.filter(run=run_id).aggregate(
+        start_time=Min('date_time'),
+        end_time=Max('date_time'),
+    )
+    return (times['end_time'] - times['start_time']).total_seconds()
+
+
 class RunViewSet(viewsets.ModelViewSet):
     queryset = Run.objects.all().select_related('athlete')
     serializer_class = RunSerializer
@@ -70,8 +78,8 @@ class RunViewSet(viewsets.ModelViewSet):
         if run.status != Run.IN_PROGRESS:
             return Response({'message': 'Run already finished or not started'}, status=400)
         run.status = Run.FINISHED
-        distance = calculate_distance(run.positions.all())
-        run.distance = distance 
+        run.run_time_seconds = calculate_time(run_id=run.id)
+        run.distance = calculate_distance(run.positions.all())
         run.save()
         self.create_challenge(run)
         return Response(RunSerializer(run).data, status=200)
