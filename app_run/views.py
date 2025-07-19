@@ -40,7 +40,7 @@ def company_details(request):
 
 def calculate_distance(positions):
     way = [(position.latitude, position.longitude) for position in positions]
-    return geodesic(way).kilometers
+    return geodesic(*way).kilometers
 
 class RunViewSet(viewsets.ModelViewSet):
     queryset = Run.objects.all().select_related('athlete')
