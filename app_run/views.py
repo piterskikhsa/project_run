@@ -1,3 +1,4 @@
+import openpyxl
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import Q, Count, Sum
@@ -11,13 +12,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from geopy.distance import geodesic
 
-from app_run.models import Run, AthleteInfo, Challenge, Position
+from app_run.models import Run, AthleteInfo, Challenge, Position, CollectibleItem
 from app_run.serializers import (
     RunSerializer,
     UserSerializer,
     AthleteInfoSerializer,
     ChallengeSerializer,
     PositionSerializer,
+    CollectibleItemSerializer,
 )
 
 User = get_user_model()
@@ -131,3 +133,50 @@ class PositionViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend,]
     filterset_fields = ['run',]
     pagination_class = PagePagination
+
+
+class CollectibleItemViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = CollectibleItem.objects.all()
+    serializer_class = CollectibleItemSerializer
+    pagination_class = PagePagination
+
+
+def process_file(file):
+    workbook = openpyxl.load_workbook(file)
+    sheet = workbook.active
+    collectible_items = []
+    row_errors = []
+    column_names = ['name', 'uid', 'value', 'latitude', 'longitude', 'picture']
+    row_num = 1
+    for row in sheet.iter_rows(min_row=2, values_only=True):
+        row_num += 1
+
+        if all(value is None for value in row):
+            continue
+        item_row = {name: value for name, value in zip(column_names, row)}
+
+        item = CollectibleItem(**item_row)
+
+        serializer = CollectibleItemSerializer(data=item_row)
+        if serializer.is_valid():
+            collectible_items.append(item)
+        else:
+            errors_fields = []
+            for field, error in serializer.errors.items():
+                errors_fields.append(f'row_{row_num}[{column_names.index(field) + 1}]')
+            row_errors.append(errors_fields)
+    CollectibleItem.objects.bulk_create(
+        collectible_items,
+        batch_size=1000,
+        update_conflicts=True,
+        update_fields=['name', 'value', 'latitude', 'longitude', 'picture'],
+        unique_fields=['uid']
+    )
+    return row_errors
+
+
+class UploadCollectibleItemFileView(APIView):
+    def post(self, request, *args, **kwargs):
+        file = request.FILES['file']
+        errors = process_file(file)
+        return Response(data=errors, status=status.HTTP_200_OK)

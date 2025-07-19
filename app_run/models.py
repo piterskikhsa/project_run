@@ -68,3 +68,21 @@ class Position(models.Model):
 
     def __str__(self):
         return f'{self.run} - {self.latitude} - {self.longitude}'
+
+
+class CollectibleItem(models.Model):
+    name = models.CharField(max_length=100)
+    uid = models.CharField(max_length=100)
+    value = models.IntegerField(default=0)
+    latitude = models.DecimalField(validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)], max_digits=6, decimal_places=4)
+    longitude = models.DecimalField(validators=[MinValueValidator(-180.0), MaxValueValidator(180.0)], max_digits=7, decimal_places=4)
+    picture = models.URLField(max_length=250)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Collectible Item'
+        verbose_name_plural = 'Collectible Items'
+
+    def __str__(self):
+        return f'{self.name} - {self.latitude}:{self.longitude}'
