@@ -87,6 +87,7 @@ class PositionSerializer(serializers.ModelSerializer):
             'run',
             'latitude',
             'longitude',
+            'date_time',
             'created_at',
         ]
 

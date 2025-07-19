@@ -47,11 +47,15 @@ def company_details(request):
 
 
 def calculate_time(run_id):
-    times = Position.objects.filter(run=run_id).aggregate(
-        start_time=Min('date_time'),
-        end_time=Max('date_time'),
-    )
-    return (times['end_time'] - times['start_time']).total_seconds()
+    try:
+        times = Position.objects.filter(run=run_id).aggregate(
+            start_time=Min('date_time'),
+            end_time=Max('date_time'),
+        )
+        return (times['end_time'] - times['start_time']).total_seconds()
+    except TypeError as e:
+        print(e)
+        return 0
 
 
 class RunViewSet(viewsets.ModelViewSet):
