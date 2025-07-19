@@ -1,21 +1,19 @@
-from decimal import Decimal
-
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from app_run.helpers import get_distance
 from app_run.models import Position, CollectibleItem
 
-DISTANCE_RAD = 100 * 0.1988
-
+DISTANCE_RAD = 100
 
 @receiver(post_save, sender=Position)
-def collect_items(sender, instance, **kwargs):
-
-    latitude_range = [Decimal(float(instance.latitude) - 100 * 0.1988) , Decimal(float(instance.latitude) + DISTANCE_RAD / 2)]
-    longitude_range = [Decimal(float(instance.longitude) - 100 * 0.1988), Decimal(float(instance.longitude) + DISTANCE_RAD / 2)]
-    items = CollectibleItem.objects.filter(
-        latitude__range=latitude_range,
-        longitude__range=longitude_range,
+def collect_items(sender, instance, created, **kwargs):
+    if not created:
+        return
+    items = CollectibleItem.objects.annotate(
+      distance=get_distance(instance.latitude, instance.longitude)
+    ).filter(
+        distance__lte=DISTANCE_RAD
     )
     user = instance.run.athlete
     user.collectible_items.add(*items)
