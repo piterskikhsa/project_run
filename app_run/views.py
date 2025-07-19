@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, action
@@ -23,6 +23,11 @@ from app_run.serializers import (
 User = get_user_model()
 
 
+def calculate_distance(positions):
+    way = [(position.latitude, position.longitude) for position in positions]
+    return geodesic(*way).kilometers
+
+
 class PagePagination(PageNumberPagination):
     page_size_query_param = 'size'
     max_page_size = 100
@@ -37,10 +42,6 @@ def company_details(request):
     }
     return Response(company_info)
 
-
-def calculate_distance(positions):
-    way = [(position.latitude, position.longitude) for position in positions]
-    return geodesic(*way).kilometers
 
 class RunViewSet(viewsets.ModelViewSet):
     queryset = Run.objects.all().select_related('athlete')
@@ -69,10 +70,18 @@ class RunViewSet(viewsets.ModelViewSet):
         distance = calculate_distance(run.positions.all())
         run.distance = distance 
         run.save()
-        runs_finished = Run.objects.filter(athlete=run.athlete, status=Run.FINISHED)
-        if runs_finished.count() == 10:
-            Challenge.objects.create(athlete=run.athlete, full_name='Сделай 10 Забегов!')
+        self.create_challenge(run)
         return Response(RunSerializer(run).data, status=200)
+
+    def create_challenge(self, run):
+        runs_finished = Run.objects.filter(athlete=run.athlete, status=Run.FINISHED).aggregate(
+            distance_sum=Sum('distance'), count=Count('id')
+        )
+        if runs_finished.get('count', 0) == 10:
+            Challenge.objects.create(athlete=run.athlete, full_name='Сделай 10 Забегов!')
+        if runs_finished.get('distance_sum', 0.0) >= 50.0:
+            Challenge.objects.get_or_create(athlete=run.athlete, full_name='Пробеги 50 километров!')
+
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.exclude(is_superuser=True).annotate(runs_finished=Count('runs', filter=Q(runs__status=Run.FINISHED)))
