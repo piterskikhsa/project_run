@@ -234,7 +234,9 @@ class SubscribeToCoachView(APIView):
         athlete = serializers.IntegerField()
 
     def post(self, request, coach_id, *args, **kwargs):
-        coach = get_object_or_404(User.objects.filter(is_staff=True), pk=coach_id)
+        coach = get_object_or_404(User, pk=coach_id)
+        if not coach.is_staff:
+            return Response(data={'error': 'Coach not found'}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.AthleteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         athlete = serializer.validated_data['athlete']
