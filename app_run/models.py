@@ -18,6 +18,7 @@ class Run(models.Model):
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default=INIT)
     distance = models.FloatField(validators=[MinValueValidator(0.0)], default=0.0)
     run_time_seconds = models.IntegerField(validators=[MinValueValidator(0)], default=0)
+    speed = models.FloatField(validators=[MinValueValidator(0.0)], default=0.0)
 
     class Meta:
         ordering = ['created_at']
@@ -65,6 +66,8 @@ class Position(models.Model):
         decimal_places=4,
     )
     date_time = models.DateTimeField(null=True)
+    distance = models.FloatField(validators=[MinValueValidator(0.0)], default=0.0)
+    speed = models.FloatField(validators=[MinValueValidator(0.0)], default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

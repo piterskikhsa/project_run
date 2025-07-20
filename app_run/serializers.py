@@ -55,6 +55,7 @@ class RunSerializer(serializers.ModelSerializer):
             'athlete_data',
             'distance',
             'run_time_seconds',
+            'speed',
         ]
 
 
@@ -89,6 +90,8 @@ class PositionSerializer(serializers.ModelSerializer):
             'latitude',
             'longitude',
             'date_time',
+            'distance',
+            'speed',
             'created_at',
         ]
 

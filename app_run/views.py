@@ -2,7 +2,7 @@
 import openpyxl
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db.models import Q, Count, Sum, Max, Min
+from django.db.models import Q, Count, Sum, Max, Min, Avg
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, action
@@ -29,6 +29,13 @@ User = get_user_model()
 def calculate_distance(positions):
     way = [(position.latitude, position.longitude) for position in positions]
     return geodesic(*way).kilometers
+
+
+def calculate_speed(start_time, end_time, distance_meters):
+    time = (end_time - start_time).total_seconds()
+    if time != 0:
+        return round(distance_meters / time, 2)
+    return 0
 
 
 class PagePagination(PageNumberPagination):
@@ -84,6 +91,7 @@ class RunViewSet(viewsets.ModelViewSet):
         run.status = Run.FINISHED
         run.run_time_seconds = calculate_time(run_id=run.id)
         run.distance = calculate_distance(run.positions.all())
+        run.speed = run.positions.aggregate(speed=Avg('speed'))['speed']
         run.save()
         self.create_challenge(run)
         return Response(RunSerializer(run).data, status=200)
@@ -151,6 +159,20 @@ class PositionViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend,]
     filterset_fields = ['run',]
     pagination_class = PagePagination
+
+    def perform_create(self, serializer):
+        distance = 0
+        speed = 0
+        run = serializer.validated_data['run']
+        last_position = Position.objects.filter(run=run).order_by('date_time').last()
+        if last_position:
+            d = geodesic((last_position.latitude, last_position.longitude), (serializer.validated_data['latitude'], serializer.validated_data['longitude'])).meters
+            distance = round(last_position.distance + d, 2)
+            speed = calculate_speed(start_time=last_position.date_time, end_time=serializer.validated_data['date_time'], distance_meters=d)
+
+        serializer.validated_data['distance'] = distance
+        serializer.validated_data['speed'] = speed
+        serializer.save()
 
 
 class CollectibleItemViewSet(viewsets.ReadOnlyModelViewSet):
