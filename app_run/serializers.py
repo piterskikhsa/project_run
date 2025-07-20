@@ -146,3 +146,28 @@ class CoachUserDetailSerializer(UserDetailSerializer):
     def get_athletes(self, obj):
         athletes = obj.athletes.values_list('athlete_id', flat=True)
         return athletes
+
+
+class AthleteSummarySerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'username',
+            'full_name',
+        ]
+
+    def get_full_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}"
+
+class ChallengeSummarySerializer(serializers.Serializer):
+    name_to_display = serializers.CharField(read_only=True)
+    athletes = AthleteSummarySerializer(many=True, read_only=True)
+
+    class Meta:
+        fields = [
+            'name_to_display',
+            'athletes',
+        ]

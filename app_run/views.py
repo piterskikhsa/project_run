@@ -2,6 +2,7 @@
 import openpyxl
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import Q, Count, Sum, Max, Min, Avg
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status, serializers
@@ -31,6 +32,7 @@ from app_run.serializers import (
     UserDetailSerializer,
     AthleteUserDetailSerializer,
     CoachUserDetailSerializer,
+    ChallengeSummarySerializer,
 )
 
 User = get_user_model()
@@ -248,3 +250,25 @@ class SubscribeToCoachView(APIView):
             return Response(data={'error': 'Already subscribed'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(data={'success': 'Subscribed'}, status=status.HTTP_200_OK)
 
+
+class ChallengesSummaryView(APIView):
+    def get(self, request, *args, **kwargs):
+        # challenges = Challenge.objects.distinct('full_name').order_by('full_name').select_related('athlete').annotate(athletes=ArrayAgg('athlete')) and split it
+        challenges = Challenge.objects.order_by('full_name').select_related('athlete')
+        result = []
+        added = set()
+        for challenge in challenges:
+            if challenge.full_name not in added:
+                item = {
+                    'name_to_display': challenge.full_name,
+                    'athletes': []
+                }
+                result.append(item)
+                added.add(challenge.full_name)
+            else:
+                for item in result:
+                    if item['name_to_display'] == challenge.full_name:
+                        item['athletes'].append(challenge.athlete)
+
+        serializer = ChallengeSummarySerializer(result, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)

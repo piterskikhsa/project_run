@@ -11,6 +11,7 @@ from app_run.views import (
     CollectibleItemViewSet,
     UploadCollectibleItemFileView,
     SubscribeToCoachView,
+    ChallengesSummaryView,
 )
 
 router = DefaultRouter()
@@ -25,5 +26,6 @@ urlpatterns = [
     path('athlete_info/<int:user_id>/', AthleteInfoApiView.as_view(), name='athlete_info'),
     path('upload_file/', UploadCollectibleItemFileView.as_view(), name='upload_file'),
     path('subscribe_to_coach/<int:coach_id>/', SubscribeToCoachView.as_view(), name='subscribe_to_coach'),
+    path('challenges_summary/', ChallengesSummaryView.as_view(), name='challenges_summary'),
     path('', include(router.urls)),
 ]
