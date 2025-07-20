@@ -2,7 +2,7 @@
 import openpyxl
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.postgres.aggregates import ArrayAgg
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db.models import Q, Count, Sum, Max, Min, Avg
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status, serializers
@@ -29,7 +29,6 @@ from app_run.serializers import (
     ChallengeSerializer,
     PositionSerializer,
     CollectibleItemSerializer,
-    UserDetailSerializer,
     AthleteUserDetailSerializer,
     CoachUserDetailSerializer,
     ChallengeSummarySerializer,
@@ -120,7 +119,10 @@ class RunViewSet(viewsets.ModelViewSet):
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = User.objects.exclude(is_superuser=True).annotate(runs_finished=Count('runs', filter=Q(runs__status=Run.FINISHED)))
+    queryset = User.objects.exclude(is_superuser=True).annotate(
+        runs_finished=Count('runs', filter=Q(runs__status=Run.FINISHED)),
+        rating=Avg('athletes__rate')
+    )
     serializer_class = UserSerializer
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ['first_name', 'last_name']
@@ -241,8 +243,8 @@ class SubscribeToCoachView(APIView):
             return Response(data={'error': 'Coach not found'}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.AthleteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        athlete = serializer.validated_data['athlete']
-        athlete = User.objects.filter(pk=athlete, is_staff=False).first()
+        athlete_id = serializer.validated_data['athlete']
+        athlete = User.objects.filter(pk=athlete_id, is_staff=False).first()
         if not athlete:
             return Response(data={'error': 'Athlete not found'}, status=status.HTTP_400_BAD_REQUEST)
         subscription, created = Subscription.objects.get_or_create(coach=coach, athlete=athlete)
@@ -272,3 +274,28 @@ class ChallengesSummaryView(APIView):
 
         serializer = ChallengeSummarySerializer(result, many=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+class RateCoachView(APIView):
+    class CoachRateSerializer(serializers.Serializer):
+        rating = serializers.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+        athlete = serializers.IntegerField()
+
+    def post(self, request, coach_id, *args, **kwargs):
+        coach = get_object_or_404(User, pk=coach_id)
+        if not coach.is_staff:
+            return Response(data={'error': 'Coach not found'}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.CoachRateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        athlete_id = serializer.validated_data['athlete']
+        athlete = User.objects.filter(pk=athlete_id, is_staff=False).first()
+        if not athlete:
+            return Response(data={'error': 'Athlete not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+        subscription = Subscription.objects.filter(coach=coach, athlete=athlete).first()
+        if not subscription:
+            return Response(data={'error': 'Not subscribed'}, status=status.HTTP_400_BAD_REQUEST)
+
+        subscription.rate = serializer.validated_data['rating']
+        subscription.save()
+        return Response(data={'success': 'Rated'}, status=status.HTTP_200_OK)

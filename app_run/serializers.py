@@ -21,6 +21,7 @@ class UserShortSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
     runs_finished = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -32,6 +33,7 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name',
             'type',
             'runs_finished',
+            'rating',
         ]
 
     def get_type(self, obj):
@@ -43,6 +45,8 @@ class UserSerializer(serializers.ModelSerializer):
             return runs_finished
         return Run.objects.filter(athlete=obj, status=Run.FINISHED).count()
 
+    def get_rating(self, obj):
+        return getattr(obj, 'rating', None)
 
 class RunSerializer(serializers.ModelSerializer):
     athlete_data = UserShortSerializer(source='athlete', read_only=True)

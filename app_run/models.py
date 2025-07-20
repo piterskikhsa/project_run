@@ -18,7 +18,7 @@ class Run(models.Model):
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default=INIT)
     distance = models.FloatField(validators=[MinValueValidator(0.0)], default=0.0)
     run_time_seconds = models.IntegerField(validators=[MinValueValidator(0)], default=0)
-    speed = models.FloatField(validators=[MinValueValidator(0.0)], default=0.0)
+    speed = models.FloatField(validators=[MinValueValidator(0.0)], default=0.0, null=True)
 
     class Meta:
         ordering = ['created_at']
@@ -101,6 +101,7 @@ class CollectibleItem(models.Model):
 class Subscription(models.Model):
     coach = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='athletes')
     athlete = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='coaches')
+    rate = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(5)])
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
