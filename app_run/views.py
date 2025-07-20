@@ -102,7 +102,7 @@ class RunViewSet(viewsets.ModelViewSet):
         run.status = Run.FINISHED
         run.run_time_seconds = calculate_time(run_id=run.id)
         run.distance = calculate_distance(run.positions.all())
-        run.speed = run.positions.aggregate(speed=Avg('speed'))['speed']
+        run.speed = run.positions.aggregate(speed=Avg('speed')).get('speed', 0.0)
         run.save()
         self.create_challenge(run)
         return Response(RunSerializer(run).data, status=200)
