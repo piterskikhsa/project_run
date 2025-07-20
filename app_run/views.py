@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import Q, Count, Sum, Max, Min, Avg
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import api_view, action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import get_object_or_404
@@ -13,7 +13,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from geopy.distance import geodesic
 
-from app_run.models import Run, AthleteInfo, Challenge, Position, CollectibleItem
+from app_run.models import (
+    Run,
+    AthleteInfo,
+    Challenge,
+    Position,
+    CollectibleItem,
+    Subscription,
+)
 from app_run.serializers import (
     RunSerializer,
     UserSerializer,
@@ -22,6 +29,8 @@ from app_run.serializers import (
     PositionSerializer,
     CollectibleItemSerializer,
     UserDetailSerializer,
+    AthleteUserDetailSerializer,
+    CoachUserDetailSerializer,
 )
 
 User = get_user_model()
@@ -116,11 +125,6 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     ordering_fields = ['date_joined']
     pagination_class = PagePagination
 
-    def get_serializer_class(self):
-        if self.action == 'retrieve':
-            return UserDetailSerializer
-        return super().get_serializer_class()
-
     def get_queryset(self):
         qs = self.queryset
         user_type = self.request.query_params.get('type', None)
@@ -130,6 +134,13 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(is_staff=False)
         return qs
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.is_staff:
+            serializer = CoachUserDetailSerializer(instance)
+        else:
+            serializer = AthleteUserDetailSerializer(instance)
+        return Response(serializer.data)
 
 class AthleteInfoApiView(APIView):
     def get(self, request, user_id=None):
@@ -216,3 +227,22 @@ class UploadCollectibleItemFileView(APIView):
         file = request.FILES['file']
         errors = process_file(file)
         return Response(data=errors, status=status.HTTP_200_OK)
+
+
+class SubscribeToCoachView(APIView):
+    class AthleteSerializer(serializers.Serializer):
+        athlete = serializers.IntegerField()
+
+    def post(self, request, coach_id, *args, **kwargs):
+        coach = get_object_or_404(User.objects.filter(is_staff=True), pk=coach_id)
+        serializer = self.AthleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        athlete = serializer.validated_data['athlete']
+        athlete = User.objects.filter(pk=athlete, is_staff=False).first()
+        if not athlete:
+            return Response(data={'error': 'Athlete not found'}, status=status.HTTP_400_BAD_REQUEST)
+        subscription, created = Subscription.objects.get_or_create(coach=coach, athlete=athlete)
+        if not created:
+            return Response(data={'error': 'Already subscribed'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data={'success': 'Subscribed'}, status=status.HTTP_200_OK)
+

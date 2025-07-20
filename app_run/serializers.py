@@ -1,3 +1,5 @@
+from random import choice
+
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
@@ -120,3 +122,27 @@ class UserDetailSerializer(UserSerializer):
 
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + ['items']
+
+
+class AthleteUserDetailSerializer(UserDetailSerializer):
+    coach = serializers.SerializerMethodField()
+
+    class Meta(UserDetailSerializer.Meta):
+        fields = UserDetailSerializer.Meta.fields + ['coach']
+
+    def get_coach(self, obj):
+        coach = obj.coaches.order_by('?').values('coach_id').first()
+        if coach is not None:
+            return coach.get('coach_id')
+        return None
+
+
+class CoachUserDetailSerializer(UserDetailSerializer):
+    athletes = serializers.SerializerMethodField()
+
+    class Meta(UserDetailSerializer.Meta):
+        fields = UserDetailSerializer.Meta.fields + ['athletes']
+
+    def get_athletes(self, obj):
+        athletes = obj.athletes.values_list('athlete_id', flat=True)
+        return athletes

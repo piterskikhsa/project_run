@@ -96,3 +96,17 @@ class CollectibleItem(models.Model):
 
     def __str__(self):
         return f'{self.name} - {self.latitude}:{self.longitude}'
+
+
+class Subscription(models.Model):
+    coach = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='athletes')
+    athlete = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='coaches')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Subscription'
+        verbose_name_plural = 'Subscriptions'
+
+    def __str__(self):
+        return f'{self.coach} - {self.athlete}'
