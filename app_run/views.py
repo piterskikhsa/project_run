@@ -101,9 +101,11 @@ class RunViewSet(viewsets.ModelViewSet):
             distance_sum=Sum('distance'), count=Count('id')
         )
         if runs_finished.get('count', 0) == 10:
-            Challenge.objects.create(athlete=run.athlete, full_name='Сделай 10 Забегов!')
+            Challenge.objects.get_or_create(athlete=run.athlete, full_name='Сделай 10 Забегов!')
         if runs_finished.get('distance_sum', 0.0) >= 50.0:
             Challenge.objects.get_or_create(athlete=run.athlete, full_name='Пробеги 50 километров!')
+        if runs_finished.get('distance_sum', 0.0) >= 2.0 and run.run_time_seconds <= 600:
+            Challenge.objects.get_or_create(athlete=run.athlete, full_name='2 километра за 10 минут!')
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
