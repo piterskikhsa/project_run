@@ -3,7 +3,7 @@ import openpyxl
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db.models import Q, Count, Sum, Max, Min, Avg
+from django.db.models import Q, Count, Sum, Max, Min, Avg, FloatField
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import api_view, action
@@ -299,3 +299,51 @@ class RateCoachView(APIView):
         subscription.rate = serializer.validated_data['rating']
         subscription.save()
         return Response(data={'success': 'Rated'}, status=status.HTTP_200_OK)
+
+
+class AnalyticsForCoachView(APIView):
+    class AnalyticsSerializer(serializers.Serializer):
+        longest_run_user = serializers.IntegerField()
+        longest_run_value = serializers.FloatField()
+        total_run_user = serializers.IntegerField()
+        total_run_value = serializers.FloatField()
+        speed_avg_user = serializers.IntegerField()
+        speed_avg_value = serializers.FloatField()
+
+    def get(self, request, coach_id, *args, **kwargs):
+        coach = get_object_or_404(User, pk=coach_id)
+        if not coach.is_staff:
+            return Response(data={'error': 'Coach not found'}, status=status.HTTP_400_BAD_REQUEST)
+        athlete_ids = Subscription.objects.filter(coach=coach).values_list('athlete_id', flat=True)
+        users = User.objects.filter(id__in=athlete_ids).annotate(
+            longest_run_value=Max('runs__distance', filter=Q(runs__status=Run.FINISHED), output_field=FloatField()),
+            total_run_value=Sum('runs__distance', filter=Q(runs__status=Run.FINISHED), output_field=FloatField()),
+            speed_avg_value=Avg('runs__speed', filter=Q(runs__status=Run.FINISHED), output_field=FloatField()),
+        )
+        longest_run_user = None
+        longest_run_value = 0.0
+        total_run_user = None
+        total_run_value = 0.0
+        speed_avg_user = None
+        speed_avg_value = 0.0
+
+        for user in users:
+            if user.longest_run_value and user.longest_run_value > longest_run_value:
+                longest_run_user = user.id
+                longest_run_value = user.longest_run_value
+            if user.total_run_value and user.total_run_value > total_run_value:
+                total_run_user = user.id
+                total_run_value = user.total_run_value
+            if user.speed_avg_value and user.speed_avg_value > speed_avg_value:
+                speed_avg_user = user.id
+                speed_avg_value = user.speed_avg_value
+
+        results = {
+            'longest_run_user': longest_run_user,
+            'longest_run_value': longest_run_value,
+            'total_run_user': total_run_user,
+            'total_run_value': total_run_value,
+            'speed_avg_user': speed_avg_user,
+            'speed_avg_value': speed_avg_value,
+        }
+        return Response(data=self.AnalyticsSerializer(results).data, status=status.HTTP_200_OK)
